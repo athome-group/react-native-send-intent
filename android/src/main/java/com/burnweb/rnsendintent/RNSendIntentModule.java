@@ -3,6 +3,9 @@ package com.burnweb.rnsendintent;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.ComponentName;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.os.Parcelable;
 import android.provider.CalendarContract;
 import android.provider.CalendarContract.Calendars;
 import android.provider.CalendarContract.Events;
@@ -11,7 +14,10 @@ import android.util.Log;
 import android.net.Uri;
 import android.telephony.TelephonyManager;
 import android.content.Context;
+import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Calendar;
@@ -42,6 +48,8 @@ import okhttp3.ResponseBody;
 import okio.Okio;
 import okio.BufferedSink;
 import okio.BufferedSource;
+
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 public class RNSendIntentModule extends ReactContextBaseJavaModule {
 
@@ -426,5 +434,70 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
             this.reactContext.startActivity(settingsIntent);
         }
     }
+
+    @ReactMethod
+    public  void openUriWithDefaultBrowser(String url) {
+       // if (DEBUG)
+            Log.d(TAG, "openFileWithInstalledAppExceptCurrentApp() called with: " + "uri = [" + uri + "]");
+        Uri uri = Uri.parse(url);
+        PackageManager packageManager = this.reactContext.getPackageManager();
+        Intent resolverIntent = new Intent("android.intent.action.VIEW", Uri.parse("https://google.com"));
+        ResolveInfo resolveInfo = packageManager.resolveActivity(resolverIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        String packageName = resolveInfo.activityInfo.packageName;
+
+        Intent browserIntent = packageManager.getLaunchIntentForPackage(packageName);
+        if (browserIntent != null) {
+            browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            browserIntent.setData(uri);
+            this.reactContext.startActivity(browserIntent);
+        } else {
+            this.openFileWithInstalledAppExceptCurrentApp(uri);
+        }
+    }
+
+    public  void openFileWithInstalledAppExceptCurrentApp(Uri uri) {
+        //if (DEBUG)
+            Log.d(TAG, "openFileWithInstalledAppExceptCurrentApp() called with: " + "uri = [" + uri + "]");
+        // Need to use a 'standard' url in order to bypass link verification (android:autoVerify='true').
+        String fakeWebUrl = "https://google.com";
+
+        String packageName = null;
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        intent.setData(Uri.parse(fakeWebUrl));
+        PackageManager packageManager = this.reactContext.getPackageManager();
+        List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0);
+        String packageNameOfAppToHide = this.reactContext.getPackageName();
+        ArrayList<Intent> targetIntents = new ArrayList<>();
+        for (ResolveInfo currentInfo : activities) {
+            packageName = currentInfo.activityInfo.packageName;
+            if (!packageNameOfAppToHide.equals(packageName)) {
+                Intent targetIntent = new Intent(Intent.ACTION_VIEW);
+                targetIntent.addCategory(Intent.CATEGORY_BROWSABLE);
+                targetIntent.setData(uri);
+                targetIntent.setPackage(packageName);
+                targetIntents.add(targetIntent);
+            }
+        }
+        if (targetIntents.size() > 1) {
+           //  if (DEBUG)
+            Log.v(TAG, "Need to ask user which browser to open URL with");
+            Intent chooserIntent = Intent.createChooser(targetIntents.remove(0), "Open file with");
+            chooserIntent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetIntents.toArray(new Parcelable[]{}));
+            this.reactContext.startActivity(chooserIntent);
+        } else if (targetIntents.size() > 0) {
+            // if (DEBUG) Log.v(TAG, "Opening URL in browser");
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+            browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            browserIntent.setData(uri);
+            this.reactContext.startActivity(browserIntent);
+        } else {
+            // Must not occur
+            // Toast.makeText(context, "No app found", Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "Cannot open url with browser");
+        }
+    }
+
 
 }
