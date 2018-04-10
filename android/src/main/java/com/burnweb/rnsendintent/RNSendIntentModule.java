@@ -438,8 +438,8 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public  void openUriWithDefaultBrowser(String url) {
        // if (DEBUG)
-            Log.d(TAG, "openFileWithInstalledAppExceptCurrentApp() called with: " + "uri = [" + uri + "]");
         Uri uri = Uri.parse(url);
+        Log.d(TAG, "openFileWithInstalledAppExceptCurrentApp() called with: " + "uri = [" + uri + "]");
         PackageManager packageManager = this.reactContext.getPackageManager();
         Intent resolverIntent = new Intent("android.intent.action.VIEW", Uri.parse("https://google.com"));
         ResolveInfo resolveInfo = packageManager.resolveActivity(resolverIntent, PackageManager.MATCH_DEFAULT_ONLY);
