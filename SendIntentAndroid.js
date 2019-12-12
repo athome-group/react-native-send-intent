@@ -84,6 +84,9 @@ var SendIntentAndroid = {
   },
   openUriWithDefaultBrowser(url) {
     return RNSendIntentAndroid.openUriWithDefaultBrowser(url);
+  },
+  openAppNotificationsSettings() {
+    return RNSendIntentAndroid.openAppNotificationsSettings();
   }
 };
 
