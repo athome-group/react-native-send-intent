@@ -442,29 +442,28 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
         String packageName = this.reactContext.getPackageName();
 
         try {
-            Intent intent = new Intent();
+            Intent settingsIntent = new Intent();
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
 
-                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName);
-                intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+                settingsIntent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                settingsIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName);
+                settingsIntent.addFlags(FLAG_ACTIVITY_NEW_TASK);
 
             } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O) {
 
-                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra("android.provider.extra.APP_PACKAGE", packageName);
-
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
-                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
-                intent.putExtra("app_package", packageName);
-                intent.putExtra("app_uid", this.reactContext.getApplicationInfo().uid);
+                settingsIntent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                settingsIntent.putExtra("android.provider.extra.APP_PACKAGE", packageName);
 
             } else {
-                return;
+
+                settingsIntent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                settingsIntent.putExtra("app_package", packageName);
+                settingsIntent.putExtra("app_uid", this.reactContext.getApplicationInfo().uid);
             }
 
-            this.reactContext.startActivity(intent);
+            if (settingsIntent.resolveActivity(this.reactContext.getPackageManager()) != null) {
+                this.reactContext.startActivity(settingsIntent);
+            }
 
         } catch (Exception e) {
             Log.d(TAG, "openAppNotifications failed: ", e);
