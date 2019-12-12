@@ -5,11 +5,13 @@ import android.content.Intent;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.Build;
 import android.os.Parcelable;
 import android.provider.CalendarContract;
 import android.provider.CalendarContract.Calendars;
 import android.provider.CalendarContract.Events;
 import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.net.Uri;
 import android.telephony.TelephonyManager;
@@ -435,6 +437,41 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void openAppNotificationsSettings() {
+
+        String packageName = this.reactContext.getPackageName();
+
+        try {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName);
+                intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+
+            } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O) {
+
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra("android.provider.extra.APP_PACKAGE", packageName);
+
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
+                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                intent.putExtra("app_package", packageName);
+                intent.putExtra("app_uid", this.reactContext.getApplicationInfo().uid);
+
+            } else {
+                return;
+            }
+
+            this.reactContext.startActivity(intent);
+
+        } catch (Exception e) {
+            Log.d(TAG, "openAppNotifications failed: ", e);
+        }
+    }
+
+    @ReactMethod
     public void openUriWithDefaultBrowser(String url) {
         // if (DEBUG)
         Uri uri = Uri.parse(url);
@@ -488,8 +525,7 @@ public class RNSendIntentModule extends ReactContextBaseJavaModule {
             this.reactContext.startActivity(chooserIntent);
         } else if (targetIntents.size() > 0) {
             Intent browserIntent = targetIntents.get(0);
-            if (browserIntent.getData() != null)
-            {
+            if (browserIntent.getData() != null) {
                 browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 this.reactContext.startActivity(browserIntent);
             }
